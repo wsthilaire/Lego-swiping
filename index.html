@@ -31,7 +31,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:1
   padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
 .app{height:100%;max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:12px;padding-block:12px}
 .narrow{width:100%;max-width:460px;margin:0 auto}
-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 h1{font-family:var(--f-display);font-weight:800;font-size:22px;letter-spacing:-.01em;margin:0;display:flex;align-items:center;gap:8px}
 .stud{width:22px;height:14px;background:var(--brick);border-radius:3px;position:relative;flex:none}
 .stud::before,.stud::after{content:"";position:absolute;top:-4px;width:6px;height:4px;background:var(--brick);border-radius:2px 2px 0 0}
@@ -112,6 +112,25 @@ button:focus-visible,select:focus-visible,label.file:focus-within{outline:3px so
 .gacts{display:flex;gap:6px;margin-top:auto;padding-top:4px}
 .gacts a,.gacts button{flex:1;font:600 12px var(--f-body);text-align:center;text-decoration:none;border:1px solid var(--line);background:none;color:var(--ink);border-radius:8px;padding:6px 4px;cursor:pointer}
 .gacts button{color:var(--muted)}
+.fview{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding-bottom:8px}
+.drop{border:2px dashed var(--line);border-radius:16px;background:var(--surface);padding:22px 18px;display:flex;flex-direction:column;gap:16px;align-items:stretch;max-width:520px;width:100%;margin:0 auto}
+.drop.over{border-color:var(--brick);background:color-mix(in srgb,var(--brick) 10%,var(--surface))}
+.drop h2{font-family:var(--f-display);font-size:22px;margin:0;text-wrap:balance}
+.drop p{margin:0;color:var(--muted);line-height:1.45}
+.steps{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px;counter-reset:s}
+.steps li{display:grid;grid-template-columns:30px 1fr;gap:10px;align-items:start;line-height:1.45;counter-increment:s}
+.steps li::before{content:counter(s);width:28px;height:28px;border-radius:7px;background:var(--brick);color:var(--brick-ink);font:700 14px var(--f-mono);display:grid;place-items:center}
+.steps b{font-weight:600}
+.pick{display:block;text-align:center;font:700 17px var(--f-body);padding:16px;border-radius:12px;background:var(--ink);color:var(--bg);cursor:pointer}
+.pick input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.pick:focus-within{outline:3px solid var(--brick);outline-offset:2px}
+.small{font-size:13px;color:var(--muted);text-align:center}
+.err{color:var(--nay);font-weight:600;text-align:center}
+.banner{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--surface);border:1px solid var(--brick);border-radius:12px;padding:10px 12px}
+.banner .who{flex:1;min-width:0}
+.banner .who b{display:block;font-family:var(--f-display);font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.banner .who small{color:var(--muted);font-size:12px}
+.banner button{font:600 13px var(--f-body);border:1px solid var(--line);background:none;color:var(--ink);border-radius:8px;padding:8px 10px;cursor:pointer}
 .none{color:var(--muted);text-align:center;padding:32px 0;grid-column:1/-1}
 @media (prefers-reduced-motion: reduce){.card.fly,.card.snap{transition:none}}
 </style>
@@ -122,6 +141,7 @@ button:focus-visible,select:focus-visible,label.file:focus-within{outline:3px so
     <div class="tabs" role="tablist">
       <button id="tabSwipe" role="tab" aria-selected="true">Swipe</button>
       <button id="tabList" role="tab" aria-selected="false">Wishlist</button>
+      <button id="tabFriend" role="tab" aria-selected="false">Friend's</button>
     </div>
   </header>
 
@@ -162,6 +182,35 @@ button:focus-visible,select:focus-visible,label.file:focus-within{outline:3px so
     </div>
     <div class="pending" id="pending" hidden></div>
     <ul class="grid" id="list"></ul>
+  </section>
+  <section id="friendView" class="fview" hidden>
+    <div class="drop" id="drop">
+      <h2>See a friend's wishlist</h2>
+      <p>Look at what someone else wants without mixing it into your own swipes.</p>
+      <ol class="steps">
+        <li><span>Ask them to open Brick Swipe, go to <b>Wishlist</b>, tap <b>Export CSV</b>, and text or email you the file. It's called <b>lego-swipes.csv</b>.</span></li>
+        <li><span>Save the file. On iPhone, tap it in the message, then tap the share icon and pick <b>Save to Files</b>.</span></li>
+        <li><span>Tap the big button below and pick that file.</span></li>
+      </ol>
+      <label class="pick" for="fimp">Choose their file<input type="file" id="fimp" accept=".csv,text/csv"></label>
+      <div class="err" id="ferr" hidden></div>
+      <div class="small">On a computer you can also drag the file onto this box. Nothing here is saved. Close the page and it's gone.</div>
+    </div>
+    <div id="fshow" hidden style="display:flex;flex-direction:column;gap:12px">
+      <div class="banner">
+        <div class="who"><b id="fname"></b><small>Just viewing. None of this is saved to your swipes.</small></div>
+        <select id="fsort" aria-label="Sort">
+          <option value="theme">Theme</option>
+          <option value="big">Most pieces</option>
+          <option value="small">Fewest pieces</option>
+          <option value="year">Newest set</option>
+          <option value="new">Newest swipe</option>
+        </select>
+        <button id="fclose">Open a different file</button>
+      </div>
+      <div class="summary" id="fsum"></div>
+      <ul class="grid" id="flist"></ul>
+    </div>
   </section>
   <div class="status narrow" id="status"></div>
 </div>
@@ -302,11 +351,7 @@ function normId(v){v=String(v||'').trim().replace(/^#/,'');const m=v.match(/^(\d
 function normStatus(v){v=String(v||'').trim().toLowerCase();
   if(['yay','yes','y','want','wishlist','like','liked','1','true','right'].includes(v))return'yay';
   if(['nay','no','n','pass','skip','dislike','0','false','left'].includes(v))return'nay';return null;}
-let pendingImport=null;
-$('imp').addEventListener('change',async e=>{
-  const f=e.target.files[0];e.target.value='';if(!f)return;
-  let rows;try{rows=parseCsv(await f.text());}catch(err){note(`Could not read ${f.name}. Make sure it is a .csv file.`);return;}
-  if(!rows.length){note(`${f.name} is empty.`);return;}
+function readList(rows){
   const h=rows[0].map(c=>c.trim().toLowerCase());
   const hasHeader=h.some(c=>/set|status|name|number|swipe/.test(c))&&!normId(rows[0][0]);
   const ci=hasHeader?Math.max(0,h.findIndex(c=>/^set(_|\s)?(num|number|no|id)?$|^number$|^set$/.test(c))):0;
@@ -314,12 +359,21 @@ $('imp').addEventListener('change',async e=>{
   const ai=hasHeader?h.findIndex(c=>/swiped_?at|date|time/.test(c)):-1;
   const ni=hasHeader?h.findIndex(c=>c==='name'):-1, ti=hasHeader?h.findIndex(c=>c==='theme'):-1;
   const pi=hasHeader?h.findIndex(c=>/^pieces?$|^parts$/.test(c)):-1, yi=hasHeader?h.findIndex(c=>c==='year'):-1;
-  const fileGuess=/nay|no|pass/i.test(f.name)?'nay':/yay|yes|want|wish/i.test(f.name)?'yay':null;
   const items=[];let skipped=0;
   rows.slice(hasHeader?1:0).forEach(r=>{const id=normId(r[ci]);if(!id){skipped++;return;}
     const it={id,v:si>=0?normStatus(r[si]):null,at:ai>=0&&r[ai]?r[ai].trim():new Date().toISOString()};
     if(!BY[id]){if(ni>=0&&r[ni])it.n=r[ni];if(ti>=0&&r[ti])it.t=r[ti];if(pi>=0&&+r[pi])it.p=+r[pi];if(yi>=0&&+r[yi])it.y=+r[yi];}
+    if(ni>=0&&r[ni])it.n0=r[ni];if(ti>=0&&r[ti])it.t0=r[ti];if(pi>=0&&+r[pi])it.p0=+r[pi];if(yi>=0&&+r[yi])it.y0=+r[yi];
     items.push(it);});
+  return {items,skipped,hasStatus:si>=0};
+}
+let pendingImport=null;
+$('imp').addEventListener('change',async e=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  let rows;try{rows=parseCsv(await f.text());}catch(err){note(`Could not read ${f.name}. Make sure it is a .csv file.`);return;}
+  if(!rows.length){note(`${f.name} is empty.`);return;}
+  const fileGuess=/nay|no|pass/i.test(f.name)?'nay':/yay|yes|want|wish/i.test(f.name)?'yay':null;
+  const {items,skipped}=readList(rows);
   if(!items.length){note(`No set numbers found in ${f.name}. The file needs a column of set numbers like 10342 or 10342-1.`);return;}
   const missing=items.filter(i=>!i.v).length;
   pendingImport={items,skipped,name:f.name};
@@ -346,30 +400,65 @@ async function applyImport(fallback){
     note(fail?`${msg}. ${fail} didn't sync to your account, they're kept on this device.`:msg+'.');}
 }
 
+// ---- grid ----
+const SORTS={new:(a,b)=>a.at<b.at?1:-1,old:(a,b)=>a.at<b.at?-1:1,theme:(a,b)=>(a.t||'').localeCompare(b.t||'')||a.n.localeCompare(b.n),
+  big:(a,b)=>b.p-a.p,small:(a,b)=>a.p-b.p,year:(a,b)=>(b.y||0)-(a.y||0)};
+function gcard(s,btn){return `<li class="gcard">
+    <div class="gphoto"><img alt="" src="${IMG(s.id)}" referrerpolicy="no-referrer" onerror="this.replaceWith(document.createTextNode('${s.id}'))"></div>
+    <div class="gbody"><div class="nm">${esc(s.n)}</div><small>${s.id}${s.t?' · '+esc(s.t):''}${s.y?' · '+s.y:''}</small><small>${s.p?fmt(s.p)+' pcs':''}</small>
+    <div class="gacts"><a href="https://www.lego.com/en-us/search?q=${s.id}" target="_blank" rel="noopener">LEGO.com ↗</a>${btn||''}</div></div></li>`;}
+function summ(items){const pcs=items.reduce((t,s)=>t+(+s.p||0),0),th=new Set(items.map(s=>s.t).filter(Boolean)).size;
+  return items.length?`<b>${fmt(items.length)}</b> sets · <b>${fmt(pcs)}</b> pieces · ${th} theme${th===1?'':'s'}`:'';}
+
+// ---- friend's wishlist (memory only, never saved) ----
+let friend=null;
+async function openFriend(f){
+  const err=$('ferr');err.hidden=true;
+  if(!f)return;
+  const bad=m=>{err.textContent=m;err.hidden=false;};
+  if(!/\.csv$/i.test(f.name)&&!/csv|text/.test(f.type||'')){bad(`"${f.name}" isn't a CSV file. Ask them for lego-swipes.csv from their Wishlist tab.`);return;}
+  let rows;try{rows=parseCsv(await f.text());}catch(e){bad(`Couldn't open "${f.name}". Try saving it again and picking it here.`);return;}
+  const {items,hasStatus}=readList(rows);
+  const want=items.filter(i=>hasStatus?i.v==='yay':true);
+  if(!want.length){bad(items.length?`Their file has no yay sets yet.`:`No LEGO sets found in "${f.name}". Make sure it's the file from Export CSV.`);return;}
+  friend={name:f.name,items:want.map(i=>{const s=BY[i.id];return s?{...s,at:i.at}:{id:i.id,n:i.n0||`Set ${i.id}`,t:i.t0||'',s:'',p:i.p0||0,y:i.y0||'',at:i.at};})};
+  renderFriend();
+}
+function renderFriend(){
+  const has=!!friend;$('drop').hidden=has;$('fshow').hidden=!has;if(!has)return;
+  const base=friend.name.replace(/\.csv$/i,'').replace(/[-_]?lego[-_]?swipes?/i,'').replace(/[-_]+/g,' ').trim();
+  $('fname').textContent=base?`${base}'s wishlist`:"Friend's wishlist";
+  const items=[...friend.items].sort(SORTS[$('fsort').value]);
+  $('fsum').innerHTML=summ(items);
+  $('flist').innerHTML=items.map(s=>gcard(s)).join('');
+}
+$('fimp').addEventListener('change',e=>{const f=e.target.files[0];e.target.value='';openFriend(f);});
+$('fsort').onchange=renderFriend;
+$('fclose').onclick=()=>{friend=null;renderFriend();};
+const drop=$('drop');
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over');}));
+drop.addEventListener('drop',e=>{const f=e.dataTransfer&&e.dataTransfer.files[0];openFriend(f);});
+
 // ---- wishlist ----
 function renderList(){
   const sort=$('sort').value;
   let items=[...swipes].filter(([,x])=>x.v===listMode).map(([id,x])=>({...info(id),at:x.at}));
-  const by={new:(a,b)=>a.at<b.at?1:-1,old:(a,b)=>a.at<b.at?-1:1,theme:(a,b)=>a.t.localeCompare(b.t)||a.n.localeCompare(b.n),
-    big:(a,b)=>b.p-a.p,small:(a,b)=>a.p-b.p,year:(a,b)=>(b.y||0)-(a.y||0)}[sort];
-  items.sort(by);
-  const pcs=items.reduce((t,s)=>t+(+s.p||0),0);
-  const themes=new Set(items.map(s=>s.t).filter(Boolean)).size;
-  $('summary').innerHTML=items.length?`<b>${fmt(items.length)}</b> sets · <b>${fmt(pcs)}</b> pieces · ${themes} theme${themes===1?'':'s'}`:'';
-  $('list').innerHTML=items.length?items.map(s=>`<li class="gcard">
-    <div class="gphoto"><img alt="" src="${IMG(s.id)}" referrerpolicy="no-referrer" onerror="this.replaceWith(document.createTextNode('${s.id}'))"></div>
-    <div class="gbody"><div class="nm">${esc(s.n)}</div><small>${s.id} · ${esc(s.t)}${s.y?' · '+s.y:''}</small><small>${s.p?fmt(s.p)+' pcs':''}</small>
-    <div class="gacts"><a href="https://www.lego.com/en-us/search?q=${s.id}" target="_blank" rel="noopener">LEGO.com ↗</a><button data-id="${s.id}">${listMode==='yay'?'Remove':'Undo'}</button></div></div></li>`).join('')
+  items.sort(SORTS[sort]);
+  $('summary').innerHTML=summ(items);
+  $('list').innerHTML=items.length?items.map(s=>gcard(s,`<button data-id="${s.id}">${listMode==='yay'?'Remove':'Undo'}</button>`)).join('')
     :`<li class="none">${listMode==='yay'?'No yays yet. Swipe right on sets you want, or import a CSV.':'No nays yet.'}</li>`;
 }
 $('list').addEventListener('click',e=>{const b=e.target.closest('button[data-id]');if(!b)return;backToDeck(b.dataset.id);buildThemes();tally();renderList();note('Sent back to the deck.');});
 $('sort').onchange=renderList;
 function tab(which){
-  const sw=which==='swipe';$('tabSwipe').setAttribute('aria-selected',sw);$('tabList').setAttribute('aria-selected',!sw);
-  $('swipeView').hidden=!sw;$('listView').hidden=sw;
-  if(sw){buildThemes();render();}else renderList();
+  [['swipe','tabSwipe','swipeView'],['list','tabList','listView'],['friend','tabFriend','friendView']].forEach(([k,b,v])=>{
+    $(b).setAttribute('aria-selected',k===which);$(v).hidden=k!==which;});
+  $('status').hidden=which==='friend';
+  if(which==='swipe'){buildThemes();render();}else if(which==='list')renderList();else renderFriend();
 }
-$('tabSwipe').onclick=()=>tab('swipe');$('tabList').onclick=()=>tab('list');
+$('tabSwipe').onclick=()=>tab('swipe');$('tabList').onclick=()=>tab('list');$('tabFriend').onclick=()=>tab('friend');
+if(location.hash==='#friend')tab('friend');
 function seg(m){listMode=m;$('sY').setAttribute('aria-selected',m==='yay');$('sN').setAttribute('aria-selected',m==='nay');renderList();}
 $('sY').onclick=()=>seg('yay');$('sN').onclick=()=>seg('nay');
 $('xAll').onclick=exportCsv;
